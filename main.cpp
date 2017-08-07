@@ -116,10 +116,7 @@ namespace yves_exact
 
         // Right shift 8 bits and add each row to itself:
         __m128i sum_row1 = _mm_add_epi16(_mm_and_si128(row1, Mask_01010101), _mm_and_si128(_mm_srli_epi64 (row1, 8), Mask_01010101));
-       __m128i sum_row2 = _mm_add_epi16(_mm_and_si128(row2, Mask_01010101), _mm_and_si128(_mm_srli_epi64 (row2, 8), Mask_01010101));
-
-        //__m128i sum_row1 = _mm_add_epi16((row1), (_mm_srli_epi64 (row1, 8)));
-         //__m128i sum_row2 = _mm_add_epi16((row2), (_mm_srli_epi64 (row2, 8)));
+        __m128i sum_row2 = _mm_add_epi16(_mm_and_si128(row2, Mask_01010101), _mm_and_si128(_mm_srli_epi64 (row2, 8), Mask_01010101));
 
         // Add the two rows:
         __m128i sum = _mm_add_epi16(sum_row1, sum_row2);
@@ -188,7 +185,7 @@ namespace yves_inexact
 namespace subsample
 {
     /*
-     * Downsamplels two rows of gray8 pixels by sampling one out of every four pixels.
+     * Downsamples two rows of gray8 pixels by sampling one out of every four pixels.
      */
     void average2Rows(const uint8_t*const src1, const uint8_t*const src2, uint8_t*const dst, int size)
     {
