@@ -1,0 +1,27 @@
+# http://travis-ci.org configuration file
+language: cpp
+cache: apt
+
+compiler:
+  - gcc
+  - clang:
+
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - cmake
+
+env:
+  global:
+    - BUILD_RELEASE=${TRAVIS_BUILD_DIR}/build
+     
+before_script:
+  # Create build folder
+  - mkdir $BUILD_RELEASE
+  # Release build
+  - cd $BUILD_RELEASE && cmake -DCMAKE_BUILD_TYPE=release ..
+
+script:
+  - cd $BUILD_RELEASE && make halfsize_sse_benchmark && ./halfsize_sse_benchmark
