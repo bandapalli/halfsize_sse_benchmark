@@ -17,7 +17,7 @@ build_script:
   - cd build
   - cmake -G"%GENERATOR%" ..
   - cmake --build . --config Release --target halfsize_sse_benchmark
-  -.\Release\halfsize_sse_benchmark
+  - .\Release\halfsize_sse_benchmark
 
 build:
   parallel: true
