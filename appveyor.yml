@@ -1,0 +1,24 @@
+version: 1.0.{build}
+
+environment:
+  matrix:
+    - GENERATOR: "Visual Studio 14 2015 Win64"
+    - GENERATOR: "Visual Studio 14 2015"
+    
+clone_folder: c:\dev\src
+
+before_build:
+# Cut some noise as described here: http://bit.ly/2gUJxhC
+- del "C:\Program Files (x86)\MSBuild\14.0\Microsoft.Common.targets\ImportAfter\Xamarin.Common.targets"
+
+build_script:
+  - cd c:\dev
+  - mkdir build
+  - cd build
+  - cmake -G"%GENERATOR%" ..
+  - cmake --build . --config Release --target halfsize_sse_benchmark
+  -.\Release\halfsize_sse_benchmark
+
+build:
+  parallel: true
+  verbosity: minimal
