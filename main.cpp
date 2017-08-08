@@ -60,16 +60,16 @@ namespace original
         {
             // Average the first 16 values of src1 and src2:
             __m128i left = _mm_avg_epu8(
-                            _mm_loadu_si128((__m128i const*)(src1+i)), 
-                            _mm_loadu_si128((__m128i const*)(src2+i)));
+                            _mm_load_si128((__m128i const*)(src1+i)), 
+                            _mm_load_si128((__m128i const*)(src2+i)));
 
             // Average the following 16 values of src1 and src2:
             __m128i right = _mm_avg_epu8(
-                            _mm_loadu_si128((__m128i const*)(src1+i+16)), 
-                            _mm_loadu_si128((__m128i const*)(src2+i+16)));
+                            _mm_load_si128((__m128i const*)(src1+i+16)), 
+                            _mm_load_si128((__m128i const*)(src2+i+16)));
 
             // Now pairwise average the 32 values in left and right:
-            _mm_storeu_si128((__m128i *)(dst+(i/2)), 
+            _mm_store_si128((__m128i *)(dst+(i/2)), 
                              _mm_packus_epi16(avg16Bytes(left), avg16Bytes(right)));
         }
     }
@@ -85,10 +85,10 @@ namespace paul
 
         for (int i = 0; i < size - 31; i += 32)
         {
-            __m128i v0 = _mm_loadu_si128((__m128i *)&src1[i]);
-            __m128i v1 = _mm_loadu_si128((__m128i *)&src1[i + 16]);
-            __m128i v2 = _mm_loadu_si128((__m128i *)&src2[i]);
-            __m128i v3 = _mm_loadu_si128((__m128i *)&src2[i + 16]);
+            __m128i v0 = _mm_load_si128((__m128i *)&src1[i]);
+            __m128i v1 = _mm_load_si128((__m128i *)&src1[i + 16]);
+            __m128i v2 = _mm_load_si128((__m128i *)&src2[i]);
+            __m128i v3 = _mm_load_si128((__m128i *)&src2[i + 16]);
 
             __m128i w0 = _mm_maddubs_epi16(v0, vk1);        // unpack and horizontal add
             __m128i w1 = _mm_maddubs_epi16(v1, vk1);
@@ -103,7 +103,7 @@ namespace paul
 
             w0 = _mm_packus_epi16(w0, w1);                  // pack
 
-            _mm_storeu_si128((__m128i *)&dst[i / 2], w0);
+            _mm_store_si128((__m128i *)&dst[i / 2], w0);
         }
     }
 }
@@ -140,12 +140,12 @@ namespace yves_exact
     {
         for(int i = 0;i<size-31; i+=32)
         {
-            __m128i tl = _mm_loadu_si128((__m128i *)&src1[i]);
-            __m128i tr = _mm_loadu_si128((__m128i *)&src1[i + 16]);
-            __m128i bl = _mm_loadu_si128((__m128i *)&src2[i]);
-            __m128i br = _mm_loadu_si128((__m128i *)&src2[i + 16]);
+            __m128i tl = _mm_load_si128((__m128i *)&src1[i]);
+            __m128i tr = _mm_load_si128((__m128i *)&src1[i + 16]);
+            __m128i bl = _mm_load_si128((__m128i *)&src2[i]);
+            __m128i br = _mm_load_si128((__m128i *)&src2[i + 16]);
 
-            _mm_storeu_si128((__m128i *)(dst+(i/2)), _mm_packus_epi16(avg16BytesX2(tl, bl), avg16BytesX2(tr, br)));
+            _mm_store_si128((__m128i *)(dst+(i/2)), _mm_packus_epi16(avg16BytesX2(tl, bl), avg16BytesX2(tr, br)));
         }
     }
 }
@@ -178,12 +178,12 @@ namespace yves_inexact
     {
         for (int i = 0; i < size - 31; i += 32)
         {
-            __m128i tl = _mm_loadu_si128((__m128i *)&src1[i]);
-            __m128i tr = _mm_loadu_si128((__m128i *)&src1[i + 16]);
-            __m128i bl = _mm_loadu_si128((__m128i *)&src2[i]);
-            __m128i br = _mm_loadu_si128((__m128i *)&src2[i + 16]);
+            __m128i tl = _mm_load_si128((__m128i *)&src1[i]);
+            __m128i tr = _mm_load_si128((__m128i *)&src1[i + 16]);
+            __m128i bl = _mm_load_si128((__m128i *)&src2[i]);
+            __m128i br = _mm_load_si128((__m128i *)&src2[i + 16]);
 
-            _mm_storeu_si128((__m128i *)(dst + (i / 2)), _mm_packus_epi16(avg16BytesX2(tl, bl), avg16BytesX2(tr, br)));
+            _mm_store_si128((__m128i *)(dst + (i / 2)), _mm_packus_epi16(avg16BytesX2(tl, bl), avg16BytesX2(tr, br)));
         }
     }
 }
@@ -197,9 +197,9 @@ namespace subsample
     {
         for (int i = 0; i < size - 31; i += 32)
         {
-            __m128i left = _mm_loadu_si128((__m128i *)&src1[i]);
-            __m128i right = _mm_loadu_si128((__m128i *)&src1[i + 16]);
-            _mm_storeu_si128((__m128i *)&dst[i / 2], _mm_packus_epi16(_mm_srli_epi16(left, 8), _mm_srli_epi16(right, 8)));
+            __m128i left = _mm_load_si128((__m128i *)&src1[i]);
+            __m128i right = _mm_load_si128((__m128i *)&src1[i + 16]);
+            _mm_store_si128((__m128i *)&dst[i / 2], _mm_packus_epi16(_mm_srli_epi16(left, 8), _mm_srli_epi16(right, 8)));
         }
     }
 }
@@ -217,10 +217,10 @@ BenchMarkResult testAndBenchmark(Function fun)
     BenchMarkResult result;
     const int n = 1024;
 
-    uint8_t src1[n];
-    uint8_t src2[n];
-    uint8_t dest_ref[n / 2];
-    uint8_t dest_test[n / 2];
+    alignas(32) uint8_t src1[n];
+    alignas(32) uint8_t src2[n];
+    alignas(32) uint8_t dest_ref[n / 2];
+    alignas(32) uint8_t dest_test[n / 2];
 
     for (int i = 0; i < n; ++i)
     {
