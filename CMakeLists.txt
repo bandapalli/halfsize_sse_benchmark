@@ -13,3 +13,6 @@ else()
 endif()
 
 add_executable(halfsize_sse_benchmark main.cpp)
+
+enable_testing()
+add_test(halfsize_sse_benchmark halfsize_sse_benchmark)
