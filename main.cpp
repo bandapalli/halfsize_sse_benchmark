@@ -5,13 +5,19 @@
 #include <chrono>
 #include <algorithm>
 #include <iostream>
-  
+
+#if defined(_MSC_VER)
+#define __restrict__ __restrict
+#elif !defined(__GNUC__)
+#define __restrict__ /* no-op */
+#endif
+
 namespace reference
 {
     /**
      * Calculates the average of two rows of gray8 pixels by averaging four pixels.
      */
-    void average2Rows(const uint8_t* row1, const uint8_t* row2, uint8_t* dst, int size)
+    void average2Rows(const uint8_t* __restrict__ row1, const uint8_t* __restrict__ row2, uint8_t* __restrict__ dst, int size)
     {
         for (int i = 0; i < size - 1; i += 2)
             *(dst++) = ((row1[i] + row1[i + 1] + row2[i] + row2[i + 1]) / 4) & 0xFF;
@@ -48,7 +54,7 @@ namespace original
     /*
      * Calculates the average of two rows of gray8 pixels by averaging four pixels.
      */
-    void average2Rows(const uint8_t* src1, const uint8_t* src2, uint8_t* dst, int size)
+    void average2Rows(const uint8_t* __restrict__ src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
     {
         for(int i = 0;i<size-31; i+=32)
         {
@@ -73,7 +79,7 @@ namespace original
 // https://stackoverflow.com/a/45542669/396803
 namespace paul
 {
-    void average2Rows(const uint8_t* src1, const uint8_t* src2, uint8_t* dst, int size)
+    void average2Rows(const uint8_t* __restrict__ src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
     {
         const __m128i vk1 = _mm_set1_epi8(1);
 
@@ -130,7 +136,7 @@ namespace yves_exact
         return sum;
     };
 
-    void average2Rows(const uint8_t*const src1, const uint8_t*const src2, uint8_t*const dst, int size)
+    void average2Rows(const uint8_t* __restrict__  src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
     {
         for(int i = 0;i<size-31; i+=32)
         {
@@ -168,7 +174,7 @@ namespace yves_inexact
 
         return sum;
     };
-    void average2Rows(const uint8_t*const src1, const uint8_t*const src2, uint8_t*const dst, int size)
+    void average2Rows(const uint8_t* __restrict__ src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
     {
         for (int i = 0; i < size - 31; i += 32)
         {
@@ -187,7 +193,7 @@ namespace subsample
     /*
      * Downsamples two rows of gray8 pixels by sampling one out of every four pixels.
      */
-    void average2Rows(const uint8_t*const src1, const uint8_t*const src2, uint8_t*const dst, int size)
+    void average2Rows(const uint8_t* __restrict__ src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
     {
         for (int i = 0; i < size - 31; i += 32)
         {
@@ -198,7 +204,7 @@ namespace subsample
     }
 }
 
-typedef void (*Function)(const uint8_t *,const uint8_t *,uint8_t *,int) ; 
+typedef void (*Function)(const uint8_t* __restrict__, const uint8_t* __restrict__, uint8_t* __restrict__, int); 
 
 struct BenchMarkResult
 {
