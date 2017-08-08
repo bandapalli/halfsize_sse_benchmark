@@ -108,6 +108,38 @@ namespace paul
     }
 }
 
+// The solution given by user Peter Cordes:
+// https://stackoverflow.com/a/45564565/396803
+namespace peterCordes
+{
+    void average2Rows(const uint8_t* __restrict__ src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
+    {
+        size /= 2;
+        for (size_t i = 0; i < size - 15; i += 16)
+        {
+            __m128i v0 = _mm_load_si128((__m128i *)&src1[i * 2]);
+            __m128i v1 = _mm_load_si128((__m128i *)&src1[i * 2 + 16]);
+            __m128i v2 = _mm_load_si128((__m128i *)&src2[i * 2]);
+            __m128i v3 = _mm_load_si128((__m128i *)&src2[i * 2 + 16]);
+
+            __m128i left = _mm_avg_epu8(v0, v2);
+            __m128i right = _mm_avg_epu8(v1, v3);
+
+            __m128i l_odd = _mm_srli_epi16(left, 8);   // line up horizontal pairs
+            __m128i r_odd = _mm_srli_epi16(right, 8);
+
+            __m128i l_avg = _mm_avg_epu8(left, l_odd);  // leaves garbage in the high halves
+            __m128i r_avg = _mm_avg_epu8(right, r_odd);
+
+            l_avg = _mm_and_si128(l_avg, _mm_set1_epi16(0x00FF));
+            r_avg = _mm_and_si128(r_avg, _mm_set1_epi16(0x00FF));
+
+            __m128i avg = _mm_packus_epi16(l_avg, r_avg);          // pack
+            _mm_store_si128((__m128i *)&dst[i], avg);
+        }
+    }
+}
+
 // One implementation suggested by user https://stackoverflow.com/users/1196549/yves-daoust:
 namespace yves_exact
 {
@@ -259,15 +291,6 @@ BenchMarkResult testAndBenchmark(Function fun)
     return result;
 }
 
-/*
-    Name            Time(us)  Status
-    Naive           0.619641  Identical
-    Original        0.188113  Off by one
-    Yves Daoust v1  0.194501  Identical
-    Yves Daoust v2  0.151681  Off by one
-    Paul's          0.110176  Identical
-    Subsample       0.055163  Degraded
-*/
 int main(int argc, char* argv[])
 {   
     std::pair<Function, const char*> tests[] = {
@@ -275,7 +298,8 @@ int main(int argc, char* argv[])
         {original::average2Rows, "Original"}, 
         {yves_exact::average2Rows,  "Yves Daoust v1"}, 
         {yves_inexact::average2Rows,  "Yves Daoust v2"}, 
-        {paul::average2Rows,  "Paul's"}, 
+        {peterCordes::average2Rows,  "Peter"}, 
+        {paul::average2Rows,  "Paul"}, 
         {subsample::average2Rows, "Subsample"}
     };
 
