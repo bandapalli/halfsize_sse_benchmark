@@ -56,21 +56,23 @@ namespace original
      */
     void average2Rows(const uint8_t* __restrict__ src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
     {
-        for(int i = 0;i<size-31; i+=32)
+        size /= 2;
+        for (size_t i = 0; i < size - 15; i += 16)
         {
+            __m128i tl = _mm_load_si128((__m128i *)&src1[i * 2]);
+            __m128i tr = _mm_load_si128((__m128i *)&src1[i * 2 + 16]);
+            __m128i bl = _mm_load_si128((__m128i *)&src2[i * 2]);
+            __m128i br = _mm_load_si128((__m128i *)&src2[i * 2 + 16]);
+
             // Average the first 16 values of src1 and src2:
-            __m128i left = _mm_avg_epu8(
-                            _mm_load_si128((__m128i const*)(src1+i)), 
-                            _mm_load_si128((__m128i const*)(src2+i)));
+            __m128i left = _mm_avg_epu8(tl, bl);
 
             // Average the following 16 values of src1 and src2:
-            __m128i right = _mm_avg_epu8(
-                            _mm_load_si128((__m128i const*)(src1+i+16)), 
-                            _mm_load_si128((__m128i const*)(src2+i+16)));
-
+            __m128i right = _mm_avg_epu8(tr, br);
+            
             // Now pairwise average the 32 values in left and right:
-            _mm_store_si128((__m128i *)(dst+(i/2)), 
-                             _mm_packus_epi16(avg16Bytes(left), avg16Bytes(right)));
+            __m128i avg = _mm_packus_epi16(avg16Bytes(left), avg16Bytes(right));
+            _mm_store_si128((__m128i *)(dst + i), avg);
         }
     }
 }
@@ -82,18 +84,19 @@ namespace paul
     void average2Rows(const uint8_t* __restrict__ src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
     {
         const __m128i vk1 = _mm_set1_epi8(1);
-
-        for (int i = 0; i < size - 31; i += 32)
+        
+        size /= 2;
+        for (size_t i = 0; i < size - 15; i += 16)
         {
-            __m128i v0 = _mm_load_si128((__m128i *)&src1[i]);
-            __m128i v1 = _mm_load_si128((__m128i *)&src1[i + 16]);
-            __m128i v2 = _mm_load_si128((__m128i *)&src2[i]);
-            __m128i v3 = _mm_load_si128((__m128i *)&src2[i + 16]);
+            __m128i tl = _mm_load_si128((__m128i *)&src1[i * 2]);
+            __m128i tr = _mm_load_si128((__m128i *)&src1[i * 2 + 16]);
+            __m128i bl = _mm_load_si128((__m128i *)&src2[i * 2]);
+            __m128i br = _mm_load_si128((__m128i *)&src2[i * 2 + 16]);
 
-            __m128i w0 = _mm_maddubs_epi16(v0, vk1);        // unpack and horizontal add
-            __m128i w1 = _mm_maddubs_epi16(v1, vk1);
-            __m128i w2 = _mm_maddubs_epi16(v2, vk1);
-            __m128i w3 = _mm_maddubs_epi16(v3, vk1);
+            __m128i w0 = _mm_maddubs_epi16(tl, vk1);        // unpack and horizontal add
+            __m128i w1 = _mm_maddubs_epi16(tr, vk1);
+            __m128i w2 = _mm_maddubs_epi16(bl, vk1);
+            __m128i w3 = _mm_maddubs_epi16(br, vk1);
 
             w0 = _mm_add_epi16(w0, w2);                     // vertical add
             w1 = _mm_add_epi16(w1, w3);
@@ -103,7 +106,7 @@ namespace paul
 
             w0 = _mm_packus_epi16(w0, w1);                  // pack
 
-            _mm_store_si128((__m128i *)&dst[i / 2], w0);
+            _mm_store_si128((__m128i *)(dst + i), w0);
         }
     }
 }
@@ -117,13 +120,13 @@ namespace peterCordes
         size /= 2;
         for (size_t i = 0; i < size - 15; i += 16)
         {
-            __m128i v0 = _mm_load_si128((__m128i *)&src1[i * 2]);
-            __m128i v1 = _mm_load_si128((__m128i *)&src1[i * 2 + 16]);
-            __m128i v2 = _mm_load_si128((__m128i *)&src2[i * 2]);
-            __m128i v3 = _mm_load_si128((__m128i *)&src2[i * 2 + 16]);
+            __m128i tl = _mm_load_si128((__m128i *)&src1[i * 2]);
+            __m128i tr = _mm_load_si128((__m128i *)&src1[i * 2 + 16]);
+            __m128i bl = _mm_load_si128((__m128i *)&src2[i * 2]);
+            __m128i br = _mm_load_si128((__m128i *)&src2[i * 2 + 16]);
 
-            __m128i left = _mm_avg_epu8(v0, v2);
-            __m128i right = _mm_avg_epu8(v1, v3);
+            __m128i left = _mm_avg_epu8(tl, bl);
+            __m128i right = _mm_avg_epu8(tr, br);
 
             __m128i l_odd = _mm_srli_epi16(left, 8);   // line up horizontal pairs
             __m128i r_odd = _mm_srli_epi16(right, 8);
@@ -135,7 +138,7 @@ namespace peterCordes
             r_avg = _mm_and_si128(r_avg, _mm_set1_epi16(0x00FF));
 
             __m128i avg = _mm_packus_epi16(l_avg, r_avg);          // pack
-            _mm_store_si128((__m128i *)&dst[i], avg);
+            _mm_store_si128((__m128i *)(dst + i), avg);
         }
     }
 }
@@ -167,17 +170,18 @@ namespace yves_exact
 
         return sum;
     };
-
-    void average2Rows(const uint8_t* __restrict__  src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
+    void average2Rows(const uint8_t* __restrict__ src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
     {
-        for(int i = 0;i<size-31; i+=32)
+        size /= 2;
+        for (size_t i = 0; i < size - 15; i += 16)
         {
-            __m128i tl = _mm_load_si128((__m128i *)&src1[i]);
-            __m128i tr = _mm_load_si128((__m128i *)&src1[i + 16]);
-            __m128i bl = _mm_load_si128((__m128i *)&src2[i]);
-            __m128i br = _mm_load_si128((__m128i *)&src2[i + 16]);
+            __m128i tl = _mm_load_si128((__m128i *)&src1[i * 2]);
+            __m128i tr = _mm_load_si128((__m128i *)&src1[i * 2 + 16]);
+            __m128i bl = _mm_load_si128((__m128i *)&src2[i * 2]);
+            __m128i br = _mm_load_si128((__m128i *)&src2[i * 2 + 16]);
 
-            _mm_store_si128((__m128i *)(dst+(i/2)), _mm_packus_epi16(avg16BytesX2(tl, bl), avg16BytesX2(tr, br)));
+            __m128i avg = _mm_packus_epi16(avg16BytesX2(tl, bl), avg16BytesX2(tr, br));
+            _mm_store_si128((__m128i *)(dst + i), avg);
         }
     }
 }
@@ -208,18 +212,21 @@ namespace yves_inexact
     };
     void average2Rows(const uint8_t* __restrict__ src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
     {
-        for (int i = 0; i < size - 31; i += 32)
+        size /= 2;
+        for (size_t i = 0; i < size - 15; i += 16)
         {
-            __m128i tl = _mm_load_si128((__m128i *)&src1[i]);
-            __m128i tr = _mm_load_si128((__m128i *)&src1[i + 16]);
-            __m128i bl = _mm_load_si128((__m128i *)&src2[i]);
-            __m128i br = _mm_load_si128((__m128i *)&src2[i + 16]);
+            __m128i tl = _mm_load_si128((__m128i *)&src1[i * 2]);
+            __m128i tr = _mm_load_si128((__m128i *)&src1[i * 2 + 16]);
+            __m128i bl = _mm_load_si128((__m128i *)&src2[i * 2]);
+            __m128i br = _mm_load_si128((__m128i *)&src2[i * 2 + 16]);
 
-            _mm_store_si128((__m128i *)(dst + (i / 2)), _mm_packus_epi16(avg16BytesX2(tl, bl), avg16BytesX2(tr, br)));
+            __m128i avg = _mm_packus_epi16(avg16BytesX2(tl, bl), avg16BytesX2(tr, br));
+            _mm_store_si128((__m128i *)(dst + i), avg);
         }
     }
 }
 
+// This function just samples every fourth pixel:
 namespace subsample
 {
     /*
@@ -227,11 +234,13 @@ namespace subsample
      */
     void average2Rows(const uint8_t* __restrict__ src1, const uint8_t* __restrict__ src2, uint8_t* __restrict__ dst, int size)
     {
-        for (int i = 0; i < size - 31; i += 32)
+        size /= 2;
+        for (size_t i = 0; i < size - 15; i += 16)
         {
-            __m128i tl = _mm_load_si128((__m128i *)&src1[i]);
-            __m128i br = _mm_load_si128((__m128i *)&src2[i + 16]);
-            _mm_store_si128((__m128i *)&dst[i / 2], _mm_packus_epi16(_mm_srli_epi16(tl, 8), _mm_srli_epi16(br, 8)));
+            __m128i tl = _mm_load_si128((__m128i *)&src1[i * 2]);
+            __m128i br = _mm_load_si128((__m128i *)&src2[i * 2 + 16]);
+            __m128i avg = _mm_packus_epi16(_mm_srli_epi16(tl, 8), _mm_srli_epi16(br, 8));
+            _mm_store_si128((__m128i *)(dst + i), avg);
         }
     }
 }
@@ -268,8 +277,6 @@ BenchMarkResult testAndBenchmark(Function fun)
 
     reference::average2Rows(src1, src2, dest_ref, n);
     using namespace std::chrono;
-    typedef high_resolution_clock Time;
-    typedef microseconds us;
     
 #ifdef NDEBUG
     static const int REPS = 1000000;
@@ -295,7 +302,7 @@ int main(int argc, char* argv[])
 {   
     std::pair<Function, const char*> tests[] = {
         {reference::average2Rows, "Naive"}, 
-        {original::average2Rows, "Original"}, 
+        {original::average2Rows, "Bjorn"}, 
         {yves_exact::average2Rows,  "Yves Daoust v1"}, 
         {yves_inexact::average2Rows,  "Yves Daoust v2"}, 
         {peterCordes::average2Rows,  "Peter"}, 
@@ -309,8 +316,9 @@ int main(int argc, char* argv[])
     std::cout << "Name,Time(us),Status" << std::endl;
     for (auto test: tests)
     {
+        std::cout << test.second;
         auto result = testAndBenchmark(test.first);
-        std::cout << test.second << "," << result.time_us << "," << (result.maxError==0 ? "Exact" : result.maxError==1 ? "Off by one" : "Degraded")<<"\n";
+        std::cout << "," << result.time_us << "," << (result.maxError==0 ? "Exact" : result.maxError==1 ? "Off by one" : "Degraded")<<"\n";
     }
 
     return 0;
