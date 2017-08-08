@@ -229,9 +229,9 @@ namespace subsample
     {
         for (int i = 0; i < size - 31; i += 32)
         {
-            __m128i left = _mm_load_si128((__m128i *)&src1[i]);
-            __m128i right = _mm_load_si128((__m128i *)&src1[i + 16]);
-            _mm_store_si128((__m128i *)&dst[i / 2], _mm_packus_epi16(_mm_srli_epi16(left, 8), _mm_srli_epi16(right, 8)));
+            __m128i tl = _mm_load_si128((__m128i *)&src1[i]);
+            __m128i br = _mm_load_si128((__m128i *)&src2[i + 16]);
+            _mm_store_si128((__m128i *)&dst[i / 2], _mm_packus_epi16(_mm_srli_epi16(tl, 8), _mm_srli_epi16(br, 8)));
         }
     }
 }
